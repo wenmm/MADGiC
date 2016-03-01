@@ -4,8 +4,8 @@
 \alias{get.post.probs}
 \title{Main posterior probability calculation}
 \usage{
-get.post.probs(maf.file, exome.file = system.file("data/exome_36.RData",
-  package = "MADGiC"),
+get.post.probs(maf.file, exome.file = sapply(paste0("exome_36_chr", 1:24,
+  ".RData"), function(x) system.file(paste0("data/", x), package = "MADGiC")),
   gene.rep.expr.file = system.file("data/gene.rep.expr.RData", package =
   "MADGiC"), gene.names.file = system.file("data/gene_names.txt", package =
   "MADGiC"), prior.file = system.file("data/prior.RData", package = "MADGiC"),
@@ -16,7 +16,7 @@ get.post.probs(maf.file, exome.file = system.file("data/exome_36.RData",
 \item{maf.file}{name of an MAF (Mutation Annotation Format) data file
 containing the somatic mutations.  Currently, NCBI builds 36 and 37 are supported.}
 
-\item{exome.file}{name of an .RData file that annotates every position of the
+\item{exome.file}{name of an .RData file (or a vector of file names if split into multiple files) that annotates every position of the
 exome for how many transitions/transversions are possible, whether each
 change is silent or nonsilent, and the SIFT scores for each possible change}
 
