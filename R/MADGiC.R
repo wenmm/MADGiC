@@ -88,7 +88,7 @@ NULL
 #'   package.  
 #' @param maf.file name of an MAF (Mutation Annotation Format) data file
 #'   containing the somatic mutations.  Currently, NCBI builds 36 and 37 are supported.
-#' @param exome.file name of an .RData file that annotates every position of the
+#' @param exome.file name of an .RData file (or a vector of file names if split into multiple files) that annotates every position of the
 #'   exome for how many transitions/transversions are possible, whether each
 #'   change is silent or nonsilent, and the SIFT scores for each possible change
 #' @param gene.rep.expr.file name of an .RData file that annotates every gene
@@ -135,7 +135,7 @@ NULL
 #' post.probs <- get.post.probs(maf.file) 
 #' }
 #' @export
-get.background <- function(maf.file, exome.file=system.file("data/exome_36.RData", package="MADGiC"), 
+get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:24, ".RData"), function(x) system.file(paste0("data/",x), package="MADGiC")), 
                            gene.rep.expr.file=system.file("data/gene.rep.expr.RData",package="MADGiC"),
                            gene.names.file=system.file("data/gene_names.txt", package="MADGiC"),
                            alpha=0.2, beta=6, N=20, replication.file=NULL, expression.file=NULL) {
@@ -242,9 +242,19 @@ get.background <- function(maf.file, exome.file=system.file("data/exome_36.RData
   rm(gene.ptr)
   gid <- unlist(sapply(gene.rep.expr, function(x) x[[1]]))
   
-  exome.ptr <- load(file=exome.file)
-  exome <- get(exome.ptr)
-  rm(exome.ptr)
+  if (length(exome.file)==1){
+    exome.ptr <- load(file=exome.file)
+    exome <- get(exome.ptr)
+    rm(exome.ptr)
+  }else{
+    exome <- vector("list", length(exome.file))
+    for (i in 1:length(exome.file)){
+      chr.ptr <- load(file=exome.file[i])
+      exome[[i]] <- get(chr.ptr)
+    }
+    rm(chr.ptr)
+  }
+
   exome.constants <- exome.SIFT <- exome.nonsil <- exome
   for(i in 1:length(exome)){
     exome.constants[[i]] <- exome[[i]][,1:7]
@@ -464,7 +474,7 @@ get.background <- function(maf.file, exome.file=system.file("data/exome_36.RData
 #'   package.
 #' @param maf.file name of an MAF (Mutation Annotation Format) data file
 #'   containing the somatic mutations.  Currently, NCBI builds 36 and 37 are supported.
-#' @param exome.file name of an .RData file that annotates every position of the
+#' @param exome.file name of an .RData file (or a vector of file names if split into multiple files) that annotates every position of the
 #'   exome for how many transitions/transversions are possible, whether each
 #'   change is silent or nonsilent, and the SIFT scores for each possible change
 #' @param gene.rep.expr.file name of an .RData file that annotates every gene
@@ -508,7 +518,7 @@ get.background <- function(maf.file, exome.file=system.file("data/exome_36.RData
 #' post.probs <- get.post.probs(maf.file, N=100, alpha=0.15, beta=6.6) 
 #' }
 #' @export
-get.post.probs <- function(maf.file, exome.file=system.file("data/exome_36.RData", package="MADGiC"), 
+get.post.probs <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:24, ".RData"), function(x) system.file(paste0("data/",x), package="MADGiC")), 
                      gene.rep.expr.file=system.file("data/gene.rep.expr.RData",package="MADGiC"),
                      gene.names.file=system.file("data/gene_names.txt", package="MADGiC"), 
                      prior.file=system.file("data/prior.RData",package="MADGiC"),
