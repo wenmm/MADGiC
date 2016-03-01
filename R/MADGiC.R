@@ -131,8 +131,6 @@ NULL
 #' # background object
 #' post.probs <- get.post.probs(background=backgrnd) 
 #' 
-#' # Perform above two steps in one function call:  
-#' post.probs <- get.post.probs(maf.file) 
 #' }
 #' @export
 get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:24, ".RData"), function(x) system.file(paste0("data/",x), package="MADGiC")), 

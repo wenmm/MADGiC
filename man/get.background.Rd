@@ -98,8 +98,6 @@ bij <- backgrnd$bij
 # background object
 post.probs <- get.post.probs(background=backgrnd)
 
-# Perform above two steps in one function call:
-post.probs <- get.post.probs(maf.file)
 }
 }
 
