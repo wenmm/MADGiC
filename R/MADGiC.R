@@ -75,15 +75,17 @@ NULL
 #'    for details about MAF files.
 NULL
 
-#' @title Main posterior probability calculation
+
+#' @title Function to calculate background mutation probabilities for each gene and sample
 #' @description This function reads in an MAF data file, exome annotation, and
 #'   pre-computed prior information and then fits a hierarchical emprical
-#'   Bayesian model to obtain posterior probabilities that each gene is a
-#'   driver.
+#'   Bayesian model to obtain background mutation rates for each gene and sample.  
+#'   These are then used to obtain posterior probabilities that each gene
+#'   is a driver by the main \code{get.post.probs} funciton.  
 #' @details The typical user only need specify the MAF file they wish to
 #'   analyze.  The other fields (exome annotation, gene annotation, gene names,
 #'   and prior probabilities) have been precomputed and distributed with this
-#'   package.
+#'   package.  
 #' @param maf.file name of an MAF (Mutation Annotation Format) data file
 #'   containing the somatic mutations.  Currently, NCBI builds 36 and 37 are supported.
 #' @param exome.file name of an .RData file that annotates every position of the
@@ -94,9 +96,6 @@ NULL
 #'   region, and expression level.
 #' @param gene.names.file name of a text file containing the Ensembl names of
 #'   all genes.
-#' @param prior.file name of an .RData file containing a named vector of prior
-#'   probabilities that each gene is a driver, obtained from positional
-#'   information in the COSMIC database.
 #' @inheritParams calculate.post.probs
 #' @param N integer number of simulated datasets to be used in the estimation of
 #'   the null distribution of functional impact scores.  The default value is 20 
@@ -112,25 +111,34 @@ NULL
 #' 	The .txt file should have two columns and no header.
 #' 	The first column should contain the Ensembl Gene ID (using Ensembl 54 for hg18) 
 #' 	and the second column should contain the replication timing measurements.  
-#' @return a named vector of posterior probabilities that each gene is a driver
+#' @return a list containing objects to be sent to the \code{get.post.probs} function.
+#'  The \code{bij} slot contains a list item with one entry per gene, where each entry is a numeric
+#'   vector containing 1-the probability of a mutation in each sample under the 
+#'   background mutation model
 #' @import abind biomaRt data.table
 #' @examples \dontrun{
 #' 
 #' # pointer to the MAF file to be analyzed
 #' maf.file <- system.file("data/OV.maf",package="MADGiC") 
 #' 
-#' # calculation of posterior probabilities that each gene is a driver 
-#' post.probs <- get.post.probs(maf.file) 
+#' # fit background mutation model and FI distribution estimates
+#' backgrnd <- get.background(maf.file) 
 #' 
-#' # Modify default settings to match TCGA ovarian analysis in paper  
-#' post.probs <- get.post.probs(maf.file, N=100, alpha=0.15, beta=6.6) 
+#' # get background probabilities of mutation for each gene and sample (1-p)
+#' bij <- backgrnd$bij
+#' 
+#' # calculation of posterior probabilities that each gene is a driver using precomputed 
+#' # background object
+#' post.probs <- get.post.probs(background=backgrnd) 
+#' 
+#' # Perform above two steps in one function call:  
+#' post.probs <- get.post.probs(maf.file) 
 #' }
 #' @export
-get.post.probs <- function(maf.file, exome.file=system.file("data/exome_36.RData", package="MADGiC"), 
-                     gene.rep.expr.file=system.file("data/gene.rep.expr.RData",package="MADGiC"),
-                     gene.names.file=system.file("data/gene_names.txt", package="MADGiC"), 
-                     prior.file=system.file("data/prior.RData",package="MADGiC"),
-                     alpha=0.2, beta=6, N=20, replication.file=NULL, expression.file=NULL) {
+get.background <- function(maf.file, exome.file=system.file("data/exome_36.RData", package="MADGiC"), 
+                           gene.rep.expr.file=system.file("data/gene.rep.expr.RData",package="MADGiC"),
+                           gene.names.file=system.file("data/gene_names.txt", package="MADGiC"),
+                           alpha=0.2, beta=6, N=20, replication.file=NULL, expression.file=NULL) {
   
   maf.table <- read.delim(maf.file, header=TRUE, sep="\t", stringsAsFactors=FALSE)
   for(i in 1:ncol(maf.table))
@@ -234,7 +242,7 @@ get.post.probs <- function(maf.file, exome.file=system.file("data/exome_36.RData
   rm(gene.ptr)
   gid <- unlist(sapply(gene.rep.expr, function(x) x[[1]]))
   
-  exome.ptr <- load(exome.file)
+  exome.ptr <- load(file=exome.file)
   exome <- get(exome.ptr)
   rm(exome.ptr)
   exome.constants <- exome.SIFT <- exome.nonsil <- exome
@@ -262,22 +270,22 @@ get.post.probs <- function(maf.file, exome.file=system.file("data/exome_36.RData
     expression$cat <- 1
     expression$cat[expression$ex > cutoffs[1] & expression$ex < cutoffs[2]] <- 2
     expression$cat[expression$ex > cutoffs[2]] <- 3
-
-    for (j in 1:length(exome.constants)){
-    	on.chr <- unlist(lapply(gene.rep.expr, function(x) x[[2]]==j))  # pull out all genes on chrom i
-    	gene.chr <- gene.rep.expr[on.chr]
-    	names <- unlist(lapply(gene.chr, function(x) x[[1]])) 
-    	x <- match(names, expression$gid)
-
-    	if(!is.null(gene.chr)) {
-      		cat <- expression$cat[x]
-      		gene.chr <- lapply(1:length(gene.chr), function(i) list(gene.chr[[i]][[1]], gene.chr[[i]][[2]], gene.chr[[i]][[3]], 
-                                                              gene.chr[[i]][[4]], cat[i], gene.chr[[i]][[6]] ))
-    	}
-   	gene.rep.expr[on.chr] <- gene.chr
-   	}
-  }
     
+    for (j in 1:length(exome.constants)){
+      on.chr <- unlist(lapply(gene.rep.expr, function(x) x[[2]]==j))  # pull out all genes on chrom i
+      gene.chr <- gene.rep.expr[on.chr]
+      names <- unlist(lapply(gene.chr, function(x) x[[1]])) 
+      x <- match(names, expression$gid)
+      
+      if(!is.null(gene.chr)) {
+        cat <- expression$cat[x]
+        gene.chr <- lapply(1:length(gene.chr), function(i) list(gene.chr[[i]][[1]], gene.chr[[i]][[2]], gene.chr[[i]][[3]], 
+                                                                gene.chr[[i]][[4]], cat[i], gene.chr[[i]][[6]] ))
+      }
+      gene.rep.expr[on.chr] <- gene.chr
+    }
+  }
+  
   if(length(replication.file)>0){
     print(paste0("Loading replication timing file ", replication.file))
     replication <- read.table(replication.file, header=FALSE, stringsAsFactors=FALSE)
@@ -295,20 +303,20 @@ get.post.probs <- function(maf.file, exome.file=system.file("data/exome_36.RData
     replication$cat <- 1
     replication$cat[replication$repl > cutoffs[1] & replication$repl < cutoffs[2]] <- 2
     replication$cat[replication$repl > cutoffs[2]] <- 3
-
+    
     for (j in 1:length(exome.constants)){
-    	on.chr <- unlist(lapply(gene.rep.expr, function(x) x[[2]]==j))  # pull out all genes on chrom i
-    	gene.chr <- gene.rep.expr[on.chr]
-    	names <- unlist(lapply(gene.chr, function(x) x[[1]])) 
-    	x <- match(names, expression$gid)
-
-    	if(!is.null(gene.chr)) {
-      		cat <- replication$cat[x]
-      		gene.chr <- lapply(1:length(gene.chr), function(i) list(gene.chr[[i]][[1]], gene.chr[[i]][[2]], gene.chr[[i]][[3]], 
-                                                              cat[i], gene.chr[[i]][[5]] , gene.chr[[i]][[6]] ))
-    	}
-   	gene.rep.expr[on.chr] <- gene.chr
-   	}
+      on.chr <- unlist(lapply(gene.rep.expr, function(x) x[[2]]==j))  # pull out all genes on chrom i
+      gene.chr <- gene.rep.expr[on.chr]
+      names <- unlist(lapply(gene.chr, function(x) x[[1]])) 
+      x <- match(names, expression$gid)
+      
+      if(!is.null(gene.chr)) {
+        cat <- replication$cat[x]
+        gene.chr <- lapply(1:length(gene.chr), function(i) list(gene.chr[[i]][[1]], gene.chr[[i]][[2]], gene.chr[[i]][[3]], 
+                                                                cat[i], gene.chr[[i]][[5]] , gene.chr[[i]][[6]] ))
+      }
+      gene.rep.expr[on.chr] <- gene.chr
+    }
   }
   
   nosam= 1:length(gid)
@@ -432,20 +440,112 @@ get.post.probs <- function(maf.file, exome.file=system.file("data/exome_36.RData
   
   ##### calculate bij  ##########################################################################################################3
   
-   
-  bij <- calculate.bij( gid, gene.rep.expr, p, s, epsilon, delta, exome.constants.mult, sample.name,muttable,nonsil.mut.type,a,b,uniqueA,tableA)
-
-
-  rm(exome.constants.mult)
-
-  load(prior.file)
-  x <- match(gid,names(prior))
-  prior <- prior[x]
   
-  pp <- calculate.post.probs(bij, sample.name, nonsil.mut.type, gid, exome.SIFT, 
-	                             f0, f1, alpha=alpha, beta=beta, p0=prior)
+  bij <- calculate.bij( gid, gene.rep.expr, p, s, epsilon, delta, exome.constants.mult, sample.name,muttable,nonsil.mut.type,a,b,uniqueA,tableA)
+  rm(exome.constants.mult)
   system("rm -r ./simulated")
   
+  bg <- list(bij=bij, sample.name=sample.name, nonsil.mut.type=nonsil.mut.type, gid=gid, exome.SIFT=exome.SIFT,
+             f0=f0, f1=f1, alpha=alpha, beta=beta)
+  
+  return(bg)
+}
+
+  
+
+#' @title Main posterior probability calculation
+#' @description This function reads in an MAF data file, exome annotation, and
+#'   pre-computed prior information and then fits a hierarchical emprical
+#'   Bayesian model to obtain posterior probabilities that each gene is a
+#'   driver.
+#' @details The typical user only need specify the MAF file they wish to
+#'   analyze.  The other fields (exome annotation, gene annotation, gene names,
+#'   and prior probabilities) have been precomputed and distributed with this
+#'   package.
+#' @param maf.file name of an MAF (Mutation Annotation Format) data file
+#'   containing the somatic mutations.  Currently, NCBI builds 36 and 37 are supported.
+#' @param exome.file name of an .RData file that annotates every position of the
+#'   exome for how many transitions/transversions are possible, whether each
+#'   change is silent or nonsilent, and the SIFT scores for each possible change
+#' @param gene.rep.expr.file name of an .RData file that annotates every gene
+#'   for its Ensembl name, chromosome, base pair positions, replication timing
+#'   region, and expression level.
+#' @param gene.names.file name of a text file containing the Ensembl names of
+#'   all genes.
+#' @param prior.file name of an .RData file containing a named vector of prior
+#'   probabilities that each gene is a driver, obtained from positional
+#'   information in the COSMIC database.
+#' @inheritParams calculate.post.probs
+#' @param N integer number of simulated datasets to be used in the estimation of
+#'   the null distribution of functional impact scores.  The default value is 20 
+#'   (see \code{\link{shuffle.muts}}).
+#' @param expression.file (optional) name of a .txt file containing gene expression
+#' 	data if user wishes to supply one (default is to use an average expression
+#' 	signal of the CCLE).  The .txt file should have two columns and no header.
+#' 	The first column should contain the Ensembl Gene ID (using Ensembl 54 for hg18) 
+#' 	and the second column should contain the expression measurements.  These can 
+#' 	be raw or log-scaled but should be normalized if normalization is desired. 
+#' @param replication.file (optional) name of a .txt file containing replication timing
+#' 	data if user wishes to supply one (default is to use data from Chen et al. (2010)).
+#' 	The .txt file should have two columns and no header.
+#' 	The first column should contain the Ensembl Gene ID (using Ensembl 54 for hg18) 
+#' 	and the second column should contain the replication timing measurements.  
+#' @param background (optional, default value is \code{NULL}) list object returned by \code{get.background} that stores intermediate
+#'  values for the background mutation model and functional impact distribution that are 
+#'  necessary for computation of posterior probability that each gene is a driver.  
+#'  If \code{NULL}, the background object will be computed (and intermediate values will not be stored).
+#' @return a named vector of posterior probabilities that each gene is a driver
+#' @import abind biomaRt data.table
+#' @examples \dontrun{
+#' 
+#' # pointer to the MAF file to be analyzed
+#' maf.file <- system.file("data/OV.maf",package="MADGiC") 
+#' 
+#' # calculation of posterior probabilities that each gene is a driver 
+#' post.probs <- get.post.probs(maf.file) 
+#' 
+#' # Modify default settings to match TCGA ovarian analysis in paper  
+#' post.probs <- get.post.probs(maf.file, N=100, alpha=0.15, beta=6.6) 
+#' }
+#' @export
+get.post.probs <- function(maf.file, exome.file=system.file("data/exome_36.RData", package="MADGiC"), 
+                     gene.rep.expr.file=system.file("data/gene.rep.expr.RData",package="MADGiC"),
+                     gene.names.file=system.file("data/gene_names.txt", package="MADGiC"), 
+                     prior.file=system.file("data/prior.RData",package="MADGiC"),
+                     alpha=0.2, beta=6, N=20, replication.file=NULL, expression.file=NULL,
+                     background=NULL) {
+
+  if (is.null(background)){
+    print(paste0("Precomputed background object not supplied; computing now..."))
+    bg <- get.background(maf.file=maf.file, exome.file=exome.file, 
+                         gene.rep.expr.file=gene.rep.expr.file,
+                         gene.names.file=gene.names.file,
+                         alpha=alpha, beta=beta, N=N, 
+                         replication.file=replication.file, 
+                         expression.file=expression.file)  
+    system("rm -r ./simulated")
+ 
+  }else{
+    if (!((length(background)==9) & (names(background)==c("bij", "sample.name", "nonsil.mut.type", "gid", 
+                                        "exome.SIFT", "f0", "f1", "alpha", "beta")))){
+      stop("Error: supplied precomputed background object doesn't have necessary components.  Please supply
+           an object computed by the get.background() function or let background=NULL to recompute.")
+      bg <- background
+      rm(background)
+    } 
+    print(paste0("Using precomputed background object to compute posterior probabilites, 
+                 any other input arguments besides prior.file will be ignored..."))
+  }
+  
+  load(prior.file)
+  x <- match(bg$gid,names(prior))
+  prior <- prior[x]
+  
+  # send background objects to calculate post probs function
+  pp <- calculate.post.probs(bij=bg$bij, sample.name=bg$sample.name, 
+                             nonsil.mut.type=bg$nonsil.mut.type, 
+                             gid=bg$gid, exome.SIFT=bg$exome.SIFT, 
+                             f0=bg$f0, f1=bg$f1, alpha=bg$alpha, beta=bg$beta, p0=prior)
   return(pp)
 }
 
