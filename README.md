@@ -1,13 +1,13 @@
 # MADGiC
-R Package 'MADGiC' 
+Development branch of the R Package 'MADGiC' 
 
 To Install:
   
   install.packages("devtools")
 
-devtools::install_github("kdkorthauer/MADGiC")
+devtools::install_github("kdkorthauer/MADGiC", ref="devel")
 
-Note: The package was built on R version 2.15.2
+Note: The package was built on R version 3.2.2
 
 The R package MADGiC fits an empirical Bayesian hierarchical model to obtain posterior probabilities that each gene is a driver.
 The model accounts for (1) frequency of mutation compared to a
@@ -20,5 +20,7 @@ database. Example data from the The Cancer Genome Atlas (TCGA) project ovarian c
 
 The latest version of the MADGiC R package has been updated to accommodate MAF files annotated with NCBI build 37 as well as 
 user-specified expression and replication timing data.  See 'get.post.probs' function for details.
+
+The development version has also been updated to include an intermediate function that allows a user to extract background mutation model estimates for each gene and sample.  See 'get.background' function for details.
 
 Earlier versions of the source code can be found <A HREF="https://www.biostat.wisc.edu/~kendzior/MADGiC">here</A>.</p>
