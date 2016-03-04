@@ -538,12 +538,11 @@ get.post.probs <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
                                         "exome.SIFT", "f0", "f1", "alpha", "beta")) == length(names(background))))){
       stop("Error: supplied precomputed background object doesn't have necessary components.  Please supply
            an object computed by the get.background() function or let background=NULL to recompute.")
-      bg <- background
-      rm(background)
     } 
-    
-    print(paste0("Using precomputed background object to compute posterior probabilites, 
-                 any other input arguments besides prior.file will be ignored..."))
+    bg <- background
+    rm(background)
+    print(paste0("Using supplied precomputed background object to compute posterior probabilites, 
+                 any additional input arguments besides prior.file will be ignored..."))
   }
   
   load(prior.file)
