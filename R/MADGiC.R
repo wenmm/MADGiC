@@ -151,8 +151,8 @@ get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
   needs.liftover <- TRUE
   ncbi.version <- as.character(unique(maf.table[,4]))
   
-  # check for higher build numbers than 36
-  for (b in 37:40){
+  # check for higher build numbers than 37
+  for (b in 38:40){
     if (length(grep(b, ncbi.version)) > 0) {stop(paste0("Build ", b, " not supported at this time.")) }
   }
   
@@ -175,7 +175,7 @@ get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
       
       # check that each item of the resulting liftOver output (GRangesList) 
       # has one element and one element only.  If two matches, treat as no matches
-      gr.lengths <- unlist(lapply(grnew, length))
+      gr.lengths = elementLengths(grnew)
       grnew[gr.lengths > 1] <- GRangesList(GRanges())
       
       maf.table[is.37,5] <- substring(as.character(seqnames(grnew)), first=4)
