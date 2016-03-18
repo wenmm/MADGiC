@@ -139,7 +139,7 @@ get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
                            gene.names.file=system.file("data/gene_names.txt", package="MADGiC"),
                            alpha=0.2, beta=6, N=20, replication.file=NULL, expression.file=NULL) {
   
-  maf.table <- read.delim(maf.file, header=TRUE, sep="\t", stringsAsFactors=FALSE)
+  maf.table <- read.delim(maf.file, header=TRUE, sep="\t", stringsAsFactors=FALSE, comment.char = "#")
   for(i in 1:ncol(maf.table))
     maf.table[,i]=as.character(maf.table[,i])
   maf.table=as.matrix(maf.table)
