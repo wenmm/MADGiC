@@ -150,15 +150,19 @@ get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
   # ensembl version depends on NCBI build
   needs.liftover <- TRUE
   ncbi.version <- as.character(unique(maf.table[,4]))
-  ncbi.version <- strsplit(ncbi.version, split=".", fixed=TRUE)
-  if (sum(unlist(ncbi.version) > 37) > 0) {stop(paste0("Build ", max(ncbi.version), " not supported at this time.")) }
+  
+  # check for higher build numbers than 36
+  for (b in 37:40){
+    if (length(grep(b, ncbi.version)) > 0) {stop(paste0("Build ", b, " not supported at this time.")) }
+  }
+  
+  # if all build 36, liftover is not needed
   if (length(ncbi.version) == 1) {
-    ncbi.version <- unlist(ncbi.version)[1]
-    if (ncbi.version == 36) { needs.liftover <- FALSE }
+    if (length(grep("36", ncbi.version)) == 1) { needs.liftover <- FALSE }
   } 
+  
   if (needs.liftover) {
     require(rtracklayer)
-    ncbi.version <- unique(unlist(lapply(ncbi.version, function(x) unlist(x)[1])))
     if (length(grep("37", ncbi.version))>0) {
       is.37 <- grep("37", maf.table[,4])
       # convert 37 to 36
