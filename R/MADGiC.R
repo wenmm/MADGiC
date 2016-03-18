@@ -172,6 +172,12 @@ get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
         ranges=IRanges(start=as.numeric(as.character(maf.table[is.37,6])), end=as.numeric(as.character(maf.table[is.37,7]))),
         strand=maf.table[is.37,8])
       grnew <- liftOver(gr, chain)
+      
+      # check that each item of the resulting liftOver output (GRangesList) 
+      # has one element and one element only.  If two matches, treat as no matches
+      gr.lengths <- unlist(lapply(grnew, length))
+      grnew[gr.lengths > 1] <- GRangesList(GRanges())
+      
       maf.table[is.37,5] <- substring(as.character(seqnames(grnew)), first=4)
       maf.table[is.37,6] <- as.numeric(start(grnew))
       maf.table[is.37,7] <- as.numeric(end(grnew))
