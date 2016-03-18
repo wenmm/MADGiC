@@ -158,8 +158,8 @@ get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
   if (needs.liftover) {
     require(rtracklayer)
     ncbi.version <- unique(unlist(lapply(ncbi.version, function(x) unlist(x)[1])))
-    if ("37" %in% ncbi.version) {
-      is.37 <- which(maf.table[,4]==37)
+    if (length(grep("37", ncbi.version))>0) {
+      is.37 <- grep("37", maf.table[,4])
       # convert 37 to 36
       chain <- import.chain(system.file("data/hg19ToHg18.over.chain", package="MADGiC"))
       gr <- GRanges(
