@@ -59,9 +59,10 @@ NULL
 #'   and expression level.
 #' @docType data
 #' @usage gene.rep.expr
-#' @format Each gene is a 5 item list: 1. Ensembl ID, 2. chromosome, 3. coding
-#'   base pairs, 4. replication timing category (1=Early, 2=Middle, 3=Late), and
-#'   5. expression level category (1=Low, 2=Medium, 3=High).
+#' @format Each gene is a 6 item list: 1. Ensembl ID, 2. chromosome, 3. coding
+#'   base pairs, 4. replication timing category (1=Early, 2=Middle, 3=Late), 
+#'   5. expression level category (1=Low, 2=Medium, 3=High), and 6. indicator
+#'   of olfactory receptor (OR) status (1=Not an OR, 2=OR)
 NULL
 
 #' @name OV.maf
