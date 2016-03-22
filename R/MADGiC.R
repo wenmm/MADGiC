@@ -144,6 +144,9 @@ get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
     maf.table[,i]=as.character(maf.table[,i])
   maf.table=as.matrix(maf.table)
   
+  # check column names - chromosome sometimes specified as "Chrom" or "Chromosome"
+  colnames(maf.table)[grep("chr", colnames(maf.table), ignore.case=TRUE)] <- "Chrom"
+  
   # remove entries with missing chromosome names
   maf.table <- maf.table[!is.na(maf.table[,5]),]
   
