@@ -1206,6 +1206,8 @@ fit.background.model<-function(mutab, nonsil.mut.type.sampl.sum, sil.mut.type.sa
     p.m <- p.all[,m,]/ref
     p[m] <- mean(p.m[p.m != 0 & !is.na(p.m) & !(p.m==Inf)])    ## p_{i}, i=1,2...,6
   }
+  # if any categories are missing, set multiplier equal to referent region
+  p[is.na(p)] <- 1
   
   # calculate s
   s <- rep(0,3)
@@ -1219,6 +1221,9 @@ fit.background.model<-function(mutab, nonsil.mut.type.sampl.sum, sil.mut.type.sa
   }
   s <- s/s[2]  # reference region is 2 (middle replicating)
   
+  # if any categories are missing, set multiplier equal to referent region
+  s[is.na(s)] <- 1
+  
   
   # calculate epsilon
   epsilon <- rep(0,3) 
@@ -1231,6 +1236,8 @@ fit.background.model<-function(mutab, nonsil.mut.type.sampl.sum, sil.mut.type.sa
   }
   epsilon <- epsilon/epsilon[2]
   
+  # if any categories are missing, set multiplier equal to referent region
+  epsilon[is.na(epsilon)] <- 1
   
   # calculate delta
   delta <- rep(0,2)
@@ -1242,7 +1249,8 @@ fit.background.model<-function(mutab, nonsil.mut.type.sampl.sum, sil.mut.type.sa
   }
   delta <- delta/delta[1]
   
-  
+  # if any categories are missing, set multiplier equal to referent region
+  delta[is.na(delta)] <- 1
   
   ## calculate p_{indel}, which will be used later for calculation of p_{frameshift} and p_{inframe}
   
