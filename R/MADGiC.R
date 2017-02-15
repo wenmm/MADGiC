@@ -178,7 +178,7 @@ get.background <- function(maf.file, exome.file=sapply(paste0("exome_36_chr", 1:
       
       # check that each item of the resulting liftOver output (GRangesList) 
       # has one element and one element only.  If two matches, treat as no matches
-      gr.lengths = elementLengths(grnew)
+      gr.lengths = elementNROWS(grnew)
       grnew[gr.lengths > 1] <- GRangesList(GRanges())
       
       maf.table[is.37,5] <- substring(as.character(seqnames(grnew)), first=4)
@@ -1391,10 +1391,11 @@ mut.type.converter<- function(mutab, exome.SIFT, seq.in.chrom, dCG.in.chrom, gen
     mutab.onp.all=  mutab[ mutab[,4]=="ONP" ,]
     if (sum(mutab[,4]=="ONP")==1) {mutab.onp.all=  t(as.matrix(mutab[ mutab[,4]=="ONP" ,])) }
     #### convert ONP to SNP ##############
-    maxchar <- max(nchar(mutab.onp[,5],mutab.onp[,6],mutab.onp[,7]))
+    maxchar <- max(nchar(c(mutab.onp.all[,5],mutab.onp.all[,6],mutab.onp.all[,7])))
     umaxchar <- unique(maxchar)
+    b = NULL
     for (k in 1:length(umaxchar)){
-      mutab.onp <- mutab.onp.all[maxchar==umaxchar[k],]
+      mutab.onp <- mutab.onp.all[maxchar==umaxchar[k],, drop = F]
       a=     matrix(0, nrow= nrow(mutab.onp)*umaxchar[k],ncol=ncol(mutab.onp)   )
       colnames(a)=colnames(mutab)
       a[,1]=  rep(mutab.onp[,1] ,each=umaxchar[k])

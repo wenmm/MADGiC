@@ -7,7 +7,7 @@ To Install:
 
 devtools::install_github("kdkorthauer/MADGiC", ref="devel")
 
-Note: The package was built on R version 3.2.2
+Note: The package was built on R version 3.4 (development version)
 
 The R package MADGiC fits an empirical Bayesian hierarchical model to obtain posterior probabilities that each gene is a driver.
 The model accounts for (1) frequency of mutation compared to a
